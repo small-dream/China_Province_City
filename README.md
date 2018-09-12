@@ -8,7 +8,7 @@
 
 在网站的最下面，你可以看到最新的行政区划分代码
 
-![这里写图片描述](https://img-blog.csdn.net/2018051010472397?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
+![这里写图片描述](https://img-blog.csdn.net/20180510110718223?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70)
 
 打开连接，数据是这样展示的：
 
@@ -160,7 +160,19 @@ class Area {
 核心代码 ：
 
 ```
-  for (int i = 0; i < strings.size(); i++) {
+List<List<String>> listList = new ArrayList<List<String>>();
+        List<Province> provinceList = new ArrayList<Province>();
+        File directory = new File("");// 参数为空
+        String courseFile = null;
+        try {
+            courseFile = directory.getCanonicalPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(courseFile);
+        //每一行读成一个String
+        List<String> strings = FileUtils.readFile(courseFile+"/province.txt");
+        for (int i = 0; i < strings.size(); i++) {
             //每一行根据空格分割，便于取出有用的值
             List<String> list = Arrays.asList(strings.get(i).split(" "));
             listList.add(list);
