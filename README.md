@@ -19,6 +19,12 @@
 先复制网页内容到txt文件，然后删除无用的文字,最后得到这样的：
 ![](http://wx4.sinaimg.cn/mw690/90bd89ffgy1fv6wlvjqeqj20850gxdg1.jpg)
 
+
+
+最后是输出结果：
+
+![这里写图片描述](http://wx4.sinaimg.cn/mw690/90bd89ffgy1fv6wlwkybmj20ks0mk0ti.jpg)
+
 代码生成JSON数据
 ----------
 
@@ -265,6 +271,3 @@ List<List<String>> listList = new ArrayList<List<String>>();
         FileUtils.createJsonFile(jsonStrings, courseFile+"/province.json");
 ```
 
-最后是输出结果：
-
-![这里写图片描述](http://wx4.sinaimg.cn/mw690/90bd89ffgy1fv6wlwkybmj20ks0mk0ti.jpg)
