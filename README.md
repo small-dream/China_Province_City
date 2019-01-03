@@ -1,4 +1,9 @@
-省市区  JSON 下载  [点击这里](https://github.com/small-dream/China_Province_City/blob/master/province.json)
+下载
+---
+
+[2018年11月中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2018%E5%B9%B411%E6%9C%88%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
+
+[Github源码](https://github.com/small-dream/China_Province_City)
 
 获取数据的来源
 ---------
@@ -9,43 +14,47 @@
 
 在网站的最下面，你可以看到最新的行政区划分代码
 
-![](http://wx1.sinaimg.cn/mw690/90bd89ffgy1fv6wluvsjej20m205qaaw.jpg)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153245230.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
 打开连接，数据是这样展示的：
 
-![](http://wx2.sinaimg.cn/mw690/90bd89ffgy1fv6wlvx3guj20kt0hhmxd.jpg)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153310712.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
-显然，这样的数据我们是无法使用的
+显然，这样的数据我们是无法使用的，通过查看网页源码发现
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153925150.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
-先复制网页内容到txt文件，然后删除无用的文字,最后得到这样的：
-![](http://wx4.sinaimg.cn/mw690/90bd89ffgy1fv6wlvjqeqj20850gxdg1.jpg)
-
-
-
-最后是输出结果：
-
-![这里写图片描述](http://wx4.sinaimg.cn/mw690/90bd89ffgy1fv6wlwkybmj20ks0mk0ti.jpg)
-
-代码生成JSON数据
-----------
-
-我们最终需要的是一份JSON数据，这样才能直接使用，接下来的工作需要通过读取文件，生成JSON数据。先读出文件的每一行，保存在List里面
-
+我们需要的地区名字和代码 都对应HTML 的 class 标签 xl7024197，这样我们可以通过Jsoup 把这些数据读取出来
 ```
-      List<List<String>> listList = new ArrayList<List<String>>();
-        List<Province> provinceList = new ArrayList<Province>();
-        File directory = new File("");// 参数为空
-        String courseFile = null;
+ public static void main(String[] args) {
         try {
-            courseFile = directory.getCanonicalPath();
+            //2018年11月中华人民共和国县以上行政区划代码网页
+            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2018/201804-12/20181101021046.html").maxBodySize(0).get();
+            Elements elements = doc.getElementsByClass("xl7024197");
+            List<String> stringList = elements.eachText();
+            List<String> stringName = new ArrayList<String>();
+            List<String> stringCode = new ArrayList<String>();
+            for (int i = 0; i < stringList.size(); i++) {
+                if (i % 2 == 0) {
+                    //地区代码
+                    stringCode.add(stringList.get(i));
+                } else {
+                    //地区名字
+                    stringName.add(stringList.get(i));
+                }
+            }
+            //正常情况 两个 list size 应该 一样
+            System.out.println("stringName  size= " + stringName.size() + "   stringCode   size= " + stringCode.size());
+            if (stringName.size() != stringCode.size()) {
+                throw new RuntimeException("数据错误");
+            }
+            List<Province> provinceList = processData(stringName, stringCode);
+            String path = FileUtils.getProjectDir() + "/2018年11月中华人民共和国县以上行政区划代码" + ".json";
+            JSONFormatUtils.jsonWriter(provinceList, path);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(courseFile);
-        //每一行读成一个String
-        List<String> strings = FileUtils.readFile(courseFile+"/province.txt");
+    }
 ```
-
 分别建立 Province  City  Area 三个类用来 保存数据：
 
 省：
@@ -157,40 +166,30 @@ class Area {
 
 ```
 
-读取每一行数据之后，我们要判断这行数据对应的是省，市还是县，主要根据下面几个条件判断：
+建立省市区对应关系，我们要判断这行数据对应的是省，市还是县，主要根据下面几个条件判断：
 
 1、行政区划代码一共六位，前两位代表省，第三、四位代表市，第五六位代表县、区。
 2、如果后四位为0，那么这一行为省。
 3、如果只有后两位为0，那么为地级市
 4、其他的为县
+5、香港，台湾，澳门比较特殊，没有对应的市区，根据自己的需求选择性处理
 
 核心代码 ：
 
 ```
-List<List<String>> listList = new ArrayList<List<String>>();
+ /**
+     * 生成省份列表数据
+     *
+     * @param stringName
+     * @param stringCode
+     * @return
+     */
+
+    private static List<Province> processData(List<String> stringName, List<String> stringCode) {
         List<Province> provinceList = new ArrayList<Province>();
-        File directory = new File("");// 参数为空
-        String courseFile = null;
-        try {
-            courseFile = directory.getCanonicalPath();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println(courseFile);
-        //每一行读成一个String
-        List<String> strings = FileUtils.readFile(courseFile+"/province.txt");
-        for (int i = 0; i < strings.size(); i++) {
-            //每一行根据空格分割，便于取出有用的值
-            List<String> list = Arrays.asList(strings.get(i).split(" "));
-            listList.add(list);
-        }
-        for (int i = 0; i < listList.size(); i++) {
-            if (listList.get(i).size() < 3) {
-                continue;
-            }
-            String provinceName = listList.get(i).get(2);
-            String provinceCode = listList.get(i).get(1);
-            //遍历获取省级单位
+        for (int i = 0; i < stringCode.size(); i++) {
+            String provinceName = stringName.get(i);
+            String provinceCode = stringCode.get(i);
             if (provinceCode.endsWith("0000")) {
                 Province province = new Province();
                 provinceList.add(province);
@@ -199,7 +198,7 @@ List<List<String>> listList = new ArrayList<List<String>>();
                 List<City> cities = new ArrayList<City>();
                 province.setCityList(cities);
                 //香港，澳门，台湾，没有市级行政单位划分，城市 地区 和省份保持一致
-                if (provinceName.contains("香港")||provinceName.contains("澳门")||provinceName.contains("台湾")){
+                if (provinceName.contains("香港") || provinceName.contains("澳门") || provinceName.contains("台湾")) {
                     City city = new City();
                     List<Area> areas = new ArrayList<Area>();
                     city.setName(provinceName);
@@ -212,7 +211,7 @@ List<List<String>> listList = new ArrayList<List<String>>();
                     areas.add(area);
                 }
                 //直辖市 城市和省份名称一样
-                if (provinceName.contains("北京")||provinceName.contains("上海")||provinceName.contains("天津")||provinceName.contains("重庆")){
+                if (provinceName.contains("北京") || provinceName.contains("上海") || provinceName.contains("天津") || provinceName.contains("重庆")) {
                     City city = new City();
                     List<Area> areas = new ArrayList<Area>();
                     city.setName(provinceName);
@@ -220,12 +219,9 @@ List<List<String>> listList = new ArrayList<List<String>>();
                     city.setAreaList(areas);
                     cities.add(city);
                     //县区
-                    for (int k = 0; k < listList.size(); k++) {
-                        if (listList.get(k).size() < 3) {
-                            continue;
-                        }
-                        String areaName = listList.get(k).get(2);
-                        String areaCode = listList.get(k).get(1);
+                    for (int k = 0; k < stringCode.size(); k++) {
+                        String areaName = stringName.get(k);
+                        String areaCode = stringCode.get(k);
                         if (!provinceCode.equals(areaCode) && areaCode.startsWith(provinceCode.substring(0, 2))) {
                             Area area = new Area();
                             area.setName(areaName);
@@ -234,12 +230,9 @@ List<List<String>> listList = new ArrayList<List<String>>();
                         }
                     }
                 }
-                for (int j = 0; j < listList.size(); j++) {
-                    if (listList.get(j).size() < 3) {
-                        continue;
-                    }
-                    String cityName = listList.get(j).get(2);
-                    String cityCode = listList.get(j).get(1);
+                for (int j = 0; j < stringCode.size(); j++) {
+                    String cityName = stringName.get(j);
+                    String cityCode = stringCode.get(j);
                     //遍历获取地级市
                     if (!cityCode.equals(provinceCode) && cityCode.startsWith(provinceCode.substring(0, 2)) && cityCode.endsWith("00")) {
                         City city = new City();
@@ -249,12 +242,9 @@ List<List<String>> listList = new ArrayList<List<String>>();
                         city.setAreaList(areas);
                         cities.add(city);
                         //遍历获取县区
-                        for (int k = 0; k < listList.size(); k++) {
-                            if (listList.get(k).size() < 3) {
-                                continue;
-                            }
-                            String areaName = listList.get(k).get(2);
-                            String areaCode = listList.get(k).get(1);
+                        for (int k = 0; k < stringCode.size(); k++) {
+                            String areaName = stringName.get(k);
+                            String areaCode = stringCode.get(k);
                             if (!areaCode.equals(cityCode) && areaCode.startsWith(cityCode.substring(0, 4))) {
                                 Area area = new Area();
                                 area.setName(areaName);
@@ -266,9 +256,10 @@ List<List<String>> listList = new ArrayList<List<String>>();
                 }
             }
         }
-        //转化成JSON数据
-        String jsonStrings = new Gson().toJson(provinceList);
-        //写入文件
-        FileUtils.createJsonFile(jsonStrings, courseFile+"/province.json");
+        return provinceList;
+    }
 ```
 
+最后在工程目录生成JSON文件：
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103154516987.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
