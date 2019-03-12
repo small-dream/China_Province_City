@@ -1,7 +1,7 @@
 下载
 ---
 
-[2018年11月中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2018%E5%B9%B411%E6%9C%88%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
+[2019年1月中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2019%E5%B9%B41%E6%9C%88%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
 
 [Github源码](https://github.com/small-dream/China_Province_City)
 
@@ -23,13 +23,13 @@
 显然，这样的数据我们是无法使用的，通过查看网页源码发现
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153925150.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
-我们需要的地区名字和代码 都对应HTML 的 class 标签 xl7024197，这样我们可以通过Jsoup 把这些数据读取出来
+我们需要的地区名字和代码 都对应HTML 的 class 标签 xl7016597，这样我们可以通过Jsoup 把这些数据读取出来
 ```
  public static void main(String[] args) {
         try {
             //2018年11月中华人民共和国县以上行政区划代码网页
             Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2018/201804-12/20181101021046.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7024197");
+            Elements elements = doc.getElementsByClass("xl7016597");
             List<String> stringList = elements.eachText();
             List<String> stringName = new ArrayList<String>();
             List<String> stringCode = new ArrayList<String>();
