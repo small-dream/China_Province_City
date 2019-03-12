@@ -14,21 +14,20 @@
 
 在网站的最下面，你可以看到最新的行政区划分代码
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153245230.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190020140.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
 打开连接，数据是这样展示的：
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153310712.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190141809.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 
 显然，这样的数据我们是无法使用的，通过查看网页源码发现
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103153925150.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
-
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190234672.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
 我们需要的地区名字和代码 都对应HTML 的 class 标签 xl7016597，这样我们可以通过Jsoup 把这些数据读取出来
 ```
  public static void main(String[] args) {
         try {
             //2018年11月中华人民共和国县以上行政区划代码网页
-            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2018/201804-12/20181101021046.html").maxBodySize(0).get();
+            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2019/201901-06/201902061009.html").maxBodySize(0).get();
             Elements elements = doc.getElementsByClass("xl7016597");
             List<String> stringList = elements.eachText();
             List<String> stringName = new ArrayList<String>();
@@ -169,13 +168,9 @@ class Area {
 建立省市区对应关系，我们要判断这行数据对应的是省，市还是县，主要根据下面几个条件判断：
 
 1、行政区划代码一共六位，前两位代表省，第三、四位代表市，第五六位代表县、区。
-
 2、如果后四位为0，那么这一行为省。
-
 3、如果只有后两位为0，那么为地级市
-
 4、其他的为县
-
 5、香港，台湾，澳门比较特殊，没有对应的市区，根据自己的需求选择性处理
 
 核心代码 ：
@@ -266,4 +261,4 @@ class Area {
 
 最后在工程目录生成JSON文件：
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190103154516987.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190343932.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
