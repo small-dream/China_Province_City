@@ -1,7 +1,7 @@
 下载
 ---
 
-[2019年1月中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2019%E5%B9%B41%E6%9C%88%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
+[2019年5月中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2019%E5%B9%B45%E6%9C%88%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
 
 [Github源码](https://github.com/small-dream/China_Province_City)
 
@@ -196,19 +196,6 @@ class Area {
                 province.setName(provinceName);
                 List<City> cities = new ArrayList<City>();
                 province.setCityList(cities);
-                //香港，澳门，台湾，没有市级行政单位划分，城市 地区 和省份保持一致
-                if (provinceName.contains("香港") || provinceName.contains("澳门") || provinceName.contains("台湾")) {
-                    City city = new City();
-                    List<Area> areas = new ArrayList<Area>();
-                    city.setName(provinceName);
-                    city.setCode(provinceCode);
-                    city.setAreaList(areas);
-                    cities.add(city);
-                    Area area = new Area();
-                    area.setName(provinceName);
-                    area.setCode(provinceCode);
-                    areas.add(area);
-                }
                 //直辖市 城市和省份名称一样
                 if (provinceName.contains("北京") || provinceName.contains("上海") || provinceName.contains("天津") || provinceName.contains("重庆")) {
                     City city = new City();
