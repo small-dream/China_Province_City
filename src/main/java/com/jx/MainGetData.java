@@ -16,10 +16,10 @@ public class MainGetData {
     public static void main(String[] args) {
         try {
             //2019年5月中华人民共和国县以上行政区划代码网页
-            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2019/201901-06/201906211421.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7528234");
+            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2019/2019/201911051008.html").maxBodySize(0).get();
+            Elements elements = doc.getElementsByClass("xl7027502");
             //省和市
-            Elements elementsProAndCity = doc.getElementsByClass("xl7428234");
+            Elements elementsProAndCity = doc.getElementsByClass("xl7127502");
             List<String> stringListProAndCity = elementsProAndCity.eachText();
             List<String> stringList = elements.eachText();
             List<String> stringName = new ArrayList<String>();
@@ -40,7 +40,7 @@ public class MainGetData {
                 throw new RuntimeException("数据错误");
             }
             List<Province> provinceList = processData(stringName, stringCode);
-            String path = FileUtils.getProjectDir() + "/2019年5月中华人民共和国县以上行政区划代码" + ".json";
+            String path = FileUtils.getProjectDir() + "/2019年9月中华人民共和国县以上行政区划代码" + ".json";
             JSONFormatUtils.jsonWriter(provinceList, path);
         } catch (IOException e) {
             e.printStackTrace();
