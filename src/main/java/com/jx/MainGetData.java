@@ -15,11 +15,11 @@ import java.util.List;
 public class MainGetData {
     public static void main(String[] args) {
         try {
-            //2019年11月中华人民共和国县以上行政区划代码网页
-            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2019/2019/201912251506.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7128029");
+            //2020年1月中华人民共和国县以上行政区划代码网页
+            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2020/2020/202003061536.html").maxBodySize(0).get();
+            Elements elements = doc.getElementsByClass("xl7020844");
             //省和市
-            Elements elementsProAndCity = doc.getElementsByClass("xl7028029");
+            Elements elementsProAndCity = doc.getElementsByClass("xl7120844");
             List<String> stringListProAndCity = elementsProAndCity.eachText();
             List<String> stringList = elements.eachText();
             List<String> stringName = new ArrayList<String>();
@@ -40,7 +40,7 @@ public class MainGetData {
                 throw new RuntimeException("数据错误");
             }
             List<Province> provinceList = processData(stringName, stringCode);
-            String path = FileUtils.getProjectDir() + "/2019年11月中华人民共和国县以上行政区划代码" + ".json";
+            String path = FileUtils.getProjectDir() + "/2020年1月中华人民共和国县以上行政区划代码" + ".json";
             JSONFormatUtils.jsonWriter(provinceList, path);
         } catch (IOException e) {
             e.printStackTrace();
