@@ -163,8 +163,8 @@ public class MainGetData {
                 if (stringCodeList.get(k).startsWith(province.getCode().substring(0, 2))) {
                     City city = new City();
                     List<Area> areas = new ArrayList<Area>();
-                    city.setName(stringCodeList.get(k));
-                    city.setCode(stringNameList.get(k));
+                    city.setName(stringNameList.get(k));
+                    city.setCode(stringCodeList.get(k));
                     city.setAreaList(areas);
                     province.getCityList().add(city);
                 }
