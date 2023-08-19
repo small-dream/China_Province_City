@@ -15,11 +15,11 @@ import java.util.List;
 public class MainGetData {
     public static void main(String[] args) {
         try {
-            //2020年1月中华人民共和国县以上行政区划代码网页
-            Document doc = Jsoup.connect("http://www.mca.gov.cn//article/sj/xzqh/2020/2020/2020092500801.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7024734");
+            //2022年中华人民共和国县以上行政区划代码网页
+            Document doc = Jsoup.connect("https://www.mca.gov.cn/mzsj/xzqh/2022/202201xzqh.html").maxBodySize(0).get();
+            Elements elements = doc.getElementsByClass("xl7032365");
             //省和市
-            Elements elementsProAndCity = doc.getElementsByClass("xl7124734");
+            Elements elementsProAndCity = doc.getElementsByClass("xl7132365");
             List<String> stringListProAndCity = elementsProAndCity.eachText();
             List<String> stringList = elements.eachText();
             List<String> stringName = new ArrayList<String>();
