@@ -5,169 +5,154 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class MainGetData {
+
+    private static final Set<String> DIRECT_CITIES = new HashSet<>(Arrays.asList("北京", "上海", "天津", "重庆"));
+
     public static void main(String[] args) {
         try {
-            //2022年中华人民共和国县以上行政区划代码网页
             Document doc = Jsoup.connect("https://www.mca.gov.cn/mzsj/xzqh/2025/202401xzqh.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7121822");
-            //省和市
             Elements elementsProAndCity = doc.getElementsByClass("xl7021822");
-            List<String> stringListProAndCity = elementsProAndCity.eachText();
-            List<String> stringList = elements.eachText();
-            List<String> stringName = new ArrayList<String>();
-            List<String> stringCode = new ArrayList<String>();
-            stringListProAndCity.addAll(stringList);
-            stringListProAndCity.remove("省直辖县级行政单位");
-            for (int i = 0; i < stringListProAndCity.size(); i++) {
+            Elements elements = doc.getElementsByClass("xl7121822");
+
+            List<String> rawList = elementsProAndCity.eachText();
+            rawList.addAll(elements.eachText());
+            rawList.remove("省直辖县级行政单位");
+
+            List<String> nameList = new ArrayList<>();
+            List<String> codeList = new ArrayList<>();
+            for (int i = 0; i < rawList.size(); i++) {
                 if (i % 2 == 0) {
-                    //地区代码
-                    stringCode.add(stringListProAndCity.get(i));
+                    codeList.add(rawList.get(i));
                 } else {
-                    //地区名字
-                    stringName.add(stringListProAndCity.get(i));
+                    nameList.add(rawList.get(i));
                 }
             }
-            //正常情况 两个 list size 应该 一样
-            System.out.println("stringName  size= " + stringName.size() + "   stringCode   size= " + stringCode.size());
-            if (stringName.size() != stringCode.size()) {
+
+            System.out.println("nameList.size=" + nameList.size() + "  codeList.size=" + codeList.size());
+            if (nameList.size() != codeList.size()) {
                 throw new RuntimeException("数据错误");
             }
-            List<Province> provinceList = processData(stringName, stringCode);
-            String path = FileUtils.getProjectDir() + "/2024年最新中华人民共和国县以上行政区划代码" + ".json";
+
+            List<Province> provinceList = processData(nameList, codeList);
+            String path = FileUtils.getProjectDir() + "/2024年最新中华人民共和国县以上行政区划代码.json";
             JSONFormatUtils.jsonWriter(provinceList, path);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("获取行政区划数据失败", e);
         }
     }
 
-    /**
-     * 生成省份列表数据
-     *
-     * @param stringName
-     * @param stringCode
-     * @return
-     */
+    private static List<Province> processData(List<String> nameList, List<String> codeList) {
+        // 构建 code -> index 映射，避免重复遍历
+        Map<String, Province> provinceMap = new LinkedHashMap<>();
+        Map<String, City> cityMap = new LinkedHashMap<>();
+        Set<String> processedCodes = new HashSet<>();
 
-    private static List<Province> processData(List<String> stringName, List<String> stringCode) {
-        List<Province> provinceList = new ArrayList<Province>();
-
-
-        //获取省
-        for (int i = 0; i < stringCode.size(); i++) {
-            String provinceName = stringName.get(i);
-            String provinceCode = stringCode.get(i);
-            if (provinceCode.endsWith("0000")) {
+        // 一次遍历：建立省份索引
+        for (int i = 0; i < codeList.size(); i++) {
+            String code = codeList.get(i);
+            String name = nameList.get(i);
+            if (code.endsWith("0000")) {
                 Province province = new Province();
-                province.setCode(provinceCode);
-                province.setName(provinceName);
-                provinceList.add(province);
-                List<City> cities = new ArrayList<City>();
-                province.setCityList(cities);
-            }
-        }
+                province.setCode(code);
+                province.setName(name);
+                province.setCityList(new ArrayList<City>());
+                provinceMap.put(code, province);
+                processedCodes.add(code);
 
-
-        //获取市
-        for (int i = 0; i < provinceList.size(); i++) {
-            String provinceName = provinceList.get(i).getName();
-            String provinceCode = provinceList.get(i).getCode();
-            //直辖市 城市和省份名称一样
-            if (provinceName.contains("北京") || provinceName.contains("上海") || provinceName.contains("天津") || provinceName.contains("重庆")) {
-                City city = new City();
-                List<Area> areas = new ArrayList<Area>();
-                city.setName(provinceName);
-                city.setCode(provinceCode);
-                city.setAreaList(areas);
-                provinceList.get(i).getCityList().add(city);
-            } else {
-                for (int j = 0; j < stringCode.size(); j++) {
-                    String cityName = stringName.get(j);
-                    String cityCode = stringCode.get(j);
-                    if (!cityCode.equals(provinceCode)) {
-                        if (cityCode.startsWith(provinceCode.substring(0, 2))) {
-                            if (cityCode.endsWith("00")) {
-                                City city = new City();
-                                List<Area> areas = new ArrayList<Area>();
-                                city.setName(cityName);
-                                city.setCode(cityCode);
-                                city.setAreaList(areas);
-                                provinceList.get(i).getCityList().add(city);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        //获取区县
-        for (Province province : provinceList) {
-            List<City> cities = province.getCityList();
-            for (City city : cities) {
-                //遍历获取县区
-                String cityCode = city.getCode();
-                String cityName = city.getName();
-                for (int k = 0; k < stringCode.size(); k++) {
-                    String areaName = stringName.get(k);
-                    String areaCode = stringCode.get(k);
-                    if (cityName.contains("北京") || cityName.contains("上海") || cityName.contains("天津") || cityName.contains("重庆")) {
-                        if (!province.getCode().equals(areaCode) && areaCode.startsWith(province.getCode().substring(0, 2))) {
-                            Area area = new Area();
-                            area.setName(areaName);
-                            area.setCode(areaCode);
-                            city.getAreaList().add(area);
-                        }
-                    } else {
-                        if (!areaCode.equals(cityCode) && areaCode.startsWith(cityCode.substring(0, 4))) {
-                            Area area = new Area();
-                            area.setName(areaName);
-                            area.setCode(areaCode);
-                            city.getAreaList().add(area);
-                        }
-                    }
-
-                }
-
-            }
-        }
-
-
-        //已经处理的数据移除
-        List<String> stringNameList = new ArrayList<>(stringName);
-        List<String> stringCodeList = new ArrayList<>(stringCode);
-        for (Province province : provinceList) {
-            stringNameList.remove(province.getName());
-            stringCodeList.remove(province.getCode());
-            List<City> cities = province.getCityList();
-            for (City city : cities) {
-                stringNameList.remove(city.getName());
-                stringCodeList.remove(city.getCode());
-                List<Area> listArea = city.getAreaList();
-                for (Area area : listArea) {
-                    stringNameList.remove(area.getName());
-                    stringCodeList.remove(area.getCode());
-                }
-            }
-        }
-
-        //处理石河子 特殊 市，City Code 不以00结尾
-        for (Province province : provinceList) {
-            for (int k = 0; k < stringCodeList.size(); k++) {
-                if (stringCodeList.get(k).startsWith(province.getCode().substring(0, 2))) {
+                // 直辖市：直接创建同名城市
+                if (isDirectCity(name)) {
                     City city = new City();
-                    List<Area> areas = new ArrayList<Area>();
-                    city.setName(stringNameList.get(k));
-                    city.setCode(stringCodeList.get(k));
-                    city.setAreaList(areas);
+                    city.setCode(code);
+                    city.setName(name);
+                    city.setAreaList(new ArrayList<Area>());
                     province.getCityList().add(city);
+                    cityMap.put(code, city);
                 }
             }
         }
 
-        return provinceList;
+        // 一次遍历：建立城市索引（非直辖市）
+        for (int i = 0; i < codeList.size(); i++) {
+            String code = codeList.get(i);
+            String name = nameList.get(i);
+            if (!code.endsWith("0000") && code.endsWith("00")) {
+                String provinceKey = code.substring(0, 2) + "0000";
+                Province province = provinceMap.get(provinceKey);
+                if (province != null && !isDirectCity(province.getName())) {
+                    City city = new City();
+                    city.setCode(code);
+                    city.setName(name);
+                    city.setAreaList(new ArrayList<Area>());
+                    province.getCityList().add(city);
+                    cityMap.put(code, city);
+                    processedCodes.add(code);
+                }
+            }
+        }
+
+        // 一次遍历：分配区县
+        for (int i = 0; i < codeList.size(); i++) {
+            String code = codeList.get(i);
+            String name = nameList.get(i);
+            if (processedCodes.contains(code)) {
+                continue;
+            }
+            String provinceKey = code.substring(0, 2) + "0000";
+            Province province = provinceMap.get(provinceKey);
+            if (province == null) {
+                continue;
+            }
+
+            if (isDirectCity(province.getName())) {
+                // 直辖市：区县直接挂在省级城市下
+                City city = province.getCityList().get(0);
+                Area area = new Area();
+                area.setCode(code);
+                area.setName(name);
+                city.getAreaList().add(area);
+                processedCodes.add(code);
+            } else {
+                String cityKey = code.substring(0, 4) + "00";
+                City city = cityMap.get(cityKey);
+                if (city != null) {
+                    Area area = new Area();
+                    area.setCode(code);
+                    area.setName(name);
+                    city.getAreaList().add(area);
+                    processedCodes.add(code);
+                }
+            }
+        }
+
+        // 处理石河子等特殊市（Code 不以 00 结尾，未被归入任何城市）
+        for (int i = 0; i < codeList.size(); i++) {
+            String code = codeList.get(i);
+            if (processedCodes.contains(code)) {
+                continue;
+            }
+            String provinceKey = code.substring(0, 2) + "0000";
+            Province province = provinceMap.get(provinceKey);
+            if (province != null) {
+                City city = new City();
+                city.setCode(code);
+                city.setName(nameList.get(i));
+                city.setAreaList(new ArrayList<Area>());
+                province.getCityList().add(city);
+            }
+        }
+
+        return new ArrayList<>(provinceMap.values());
+    }
+
+    private static boolean isDirectCity(String name) {
+        for (String keyword : DIRECT_CITIES) {
+            if (name.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
