@@ -1,304 +1,113 @@
-下载
----
+# China_Province_City
 
-[2024年最新中华人民共和国县以上行政区划代码.json](https://github.com/small-dream/China_Province_City/blob/master/2024%E5%B9%B4%E6%9C%80%E6%96%B0%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E5%8E%BF%E4%BB%A5%E4%B8%8A%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81.json)
+基于民政部行政区划页面抓取并整理省、市、区县三级数据，最终生成层级化 JSON 文件。
 
-[Github源码](https://github.com/small-dream/China_Province_City)
+当前仓库中的程序入口是 `com.jx.MainGetData`，会从代码中写死的民政部页面读取数据，并在项目根目录生成：
 
-获取数据的来源
----------
+- `2024年最新中华人民共和国县以上行政区划代码.json`
 
-什么地方可以获取最权威的省市县数据？当然是官网
+仓库中已经包含一份生成结果，可直接使用。
 
-[民政部门门户网站](https://www.mca.gov.cn/n156/index.html)
+## 数据来源
 
-在网站的最下面，你可以看到最新的行政区划分代码
+当前代码使用的页面地址为：
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190020140.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+- `https://www.mca.gov.cn/mzsj/xzqh/2025/202401xzqh.html`
 
-打开连接，数据是这样展示的：
+程序通过 Jsoup 读取页面中这两个 class 对应的表格内容：
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190141809.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+- `xl7021822`
+- `xl7121822`
 
-显然，这样的数据我们是无法使用的，通过查看网页源码发现
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190234672.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
-我们需要的地区名字和代码 都对应HTML 的 class 标签 xl7121822 和xl7021822 ，这样我们可以通过Jsoup 把这些数据读取出来
-```
-  try {
-            //2019年11月中华人民共和国县以上行政区划代码网页
-            Document doc = Jsoup.connect("http://www.mca.gov.cn/article/sj/xzqh/2019/2019/201912251506.html").maxBodySize(0).get();
-            Elements elements = doc.getElementsByClass("xl7121822");
-            //省和市
-            Elements elementsProAndCity = doc.getElementsByClass("和xl7021822");
-            List<String> stringListProAndCity = elementsProAndCity.eachText();
-            List<String> stringList = elements.eachText();
-            List<String> stringName = new ArrayList<String>();
-            List<String> stringCode = new ArrayList<String>();
-            stringListProAndCity.addAll(stringList);
-            for (int i = 0; i < stringListProAndCity.size(); i++) {
-                if (i % 2 == 0) {
-                    //地区代码
-                    stringCode.add(stringListProAndCity.get(i));
-                } else {
-                    //地区名字
-                    stringName.add(stringListProAndCity.get(i));
-                }
-            }
-            //正常情况 两个 list size 应该 一样
-            System.out.println("stringName  size= " + stringName.size() + "   stringCode   size= " + stringCode.size());
-            if (stringName.size() != stringCode.size()) {
-                throw new RuntimeException("数据错误");
-            }
-            List<Province> provinceList = processData(stringName, stringCode);
-            String path = FileUtils.getProjectDir() + "/2019年11月中华人民共和国县以上行政区划代码" + ".json";
-            JSONFormatUtils.jsonWriter(provinceList, path);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-```
-分别建立 Province  City  Area 三个类用来 保存数据：
+然后将页面中的行政区划代码与名称整理为结构化数据。
 
-省：
-```
-/**
- * 省份
- * @author jx on 2018/4/12.
- */
+## 项目结构
 
-class Province {
-    private String code;
-    private String name;
-    private List<City> cityList;
+核心文件如下：
 
-    public String getCode() {
-        return code;
-    }
+- `src/main/java/com/jx/MainGetData.java`：抓取页面、解析列表、组装省市区层级、输出 JSON
+- `src/main/java/com/jx/Province.java`：省级模型
+- `src/main/java/com/jx/City.java`：市级模型
+- `src/main/java/com/jx/Area.java`：区县模型
+- `src/main/java/com/jx/JSONFormatUtils.java`：使用 Gson 美化写出 JSON
+- `src/main/java/com/jx/FileUtils.java`：获取项目根目录
+- `pom.xml`：Maven 依赖配置
 
-    public void setCode(String code) {
-        this.code = code;
-    }
+## 数据结构
 
-    public String getName() {
-        return name;
-    }
+生成后的 JSON 结构如下：
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<City> getCityList() {
-        return cityList;
-    }
-
-    public void setCityList(List<City> cityList) {
-        this.cityList = cityList;
-    }
-}
-```
-市：
-
-```
-/**
- * 地级市
- * @author jx on 2018/4/12.
- */
-
-class City {
-    private String code;
-    private String name;
-    private List<Area> areaList;
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<Area> getAreaList() {
-        return areaList;
-    }
-
-    public void setAreaList(List<Area> areaList) {
-        this.areaList = areaList;
-    }
-}
-
+```json
+[
+  {
+    "code": "110000",
+    "name": "北京市",
+    "cityList": [
+      {
+        "code": "110000",
+        "name": "北京市",
+        "areaList": [
+          {
+            "code": "110101",
+            "name": "东城区"
+          }
+        ]
+      }
+    ]
+  }
+]
 ```
 
-县、区：
+字段说明：
 
-```
-/**
- * 区，县
- * @author jx on 2018/4/12.
- */
+- `Province.code` / `Province.name`：省级行政区代码与名称
+- `Province.cityList`：该省下的城市列表
+- `City.code` / `City.name`：市级行政区代码与名称
+- `City.areaList`：该市下的区县列表
+- `Area.code` / `Area.name`：区县级行政区代码与名称
 
-class Area {
-    private String code;
-    private String name;
+## 当前代码的处理逻辑
 
-    public String getCode() {
-        return code;
-    }
+`MainGetData.processData(...)` 现在采用按编码分层归类的方式处理数据：
 
-    public void setCode(String code) {
-        this.code = code;
-    }
+1. 先扫描全部数据，找出所有以 `0000` 结尾的省级编码，建立 `provinceMap`
+2. 对四个直辖市 `北京`、`上海`、`天津`、`重庆`，直接创建一个与省同名的城市节点
+3. 再扫描全部数据，将以 `00` 结尾但不以 `0000` 结尾的编码识别为普通地级市，并挂到对应省份下
+4. 对剩余编码：
+   - 如果属于直辖市，则直接挂到该直辖市的城市节点下作为区县
+   - 否则按前四位编码匹配所属地级市，挂到其 `areaList`
+5. 对仍未归类的编码，按“特殊城市”处理，直接补挂到所属省份下
 
-    public String getName() {
-        return name;
-    }
+另外，当前代码还会先移除页面中的这条文本，避免干扰后续解析：
 
-    public void setName(String name) {
-        this.name = name;
-    }
+- `省直辖县级行政单位`
 
-}
+## 依赖版本
 
-```
+当前 `pom.xml` 中使用：
 
-建立省市区对应关系，我们要判断这行数据对应的是省，市还是县，主要根据下面几个条件判断：
+- Java 8
+- `org.jsoup:jsoup:1.21.2`
+- `com.google.code.gson:gson:2.13.2`
 
-1、行政区划代码一共六位，前两位代表省，第三、四位代表市，第五六位代表县、区。
-2、如果后四位为0，那么这一行为省。
-3、如果只有后两位为0，那么为地级市
-4、其他的为县
-5、香港，台湾，澳门比较特殊，没有对应的市区，根据自己的需求选择性处理
-6、新疆石河子市等比较特殊，不是以00结尾，需要单独处理
+## 运行方式
 
-核心代码 ：
+### 方式一：在 IDE 中运行
 
-```
-   private static List<Province> processData(List<String> stringName, List<String> stringCode) {
-         List<Province> provinceList = new ArrayList<Province>();
- 
- 
-         //获取省
-         for (int i = 0; i < stringCode.size(); i++) {
-             String provinceName = stringName.get(i);
-             String provinceCode = stringCode.get(i);
-             if (provinceCode.endsWith("0000")) {
-                 Province province = new Province();
-                 province.setCode(provinceCode);
-                 province.setName(provinceName);
-                 provinceList.add(province);
-                 List<City> cities = new ArrayList<City>();
-                 province.setCityList(cities);
-             }
-         }
- 
- 
-         //获取市
-         for (int i = 0; i < provinceList.size(); i++) {
-             String provinceName = provinceList.get(i).getName();
-             String provinceCode = provinceList.get(i).getCode();
-             //直辖市 城市和省份名称一样
-             if (provinceName.contains("北京") || provinceName.contains("上海") || provinceName.contains("天津") || provinceName.contains("重庆")) {
-                 City city = new City();
-                 List<Area> areas = new ArrayList<Area>();
-                 city.setName(provinceName);
-                 city.setCode(provinceCode);
-                 city.setAreaList(areas);
-                 provinceList.get(i).getCityList().add(city);
-             } else {
-                 for (int j = 0; j < stringCode.size(); j++) {
-                     String cityName = stringName.get(j);
-                     String cityCode = stringCode.get(j);
-                     if (!cityCode.equals(provinceCode)) {
-                         if (cityCode.startsWith(provinceCode.substring(0, 2))) {
-                             if (cityCode.endsWith("00")) {
-                                 City city = new City();
-                                 List<Area> areas = new ArrayList<Area>();
-                                 city.setName(cityName);
-                                 city.setCode(cityCode);
-                                 city.setAreaList(areas);
-                                 provinceList.get(i).getCityList().add(city);
-                             }
-                         }
-                     }
-                 }
-             }
-         }
- 
- 
-         //获取区县
-         for (Province province : provinceList) {
-             List<City> cities = province.getCityList();
-             for (City city : cities) {
-                 //遍历获取县区
-                 String cityCode = city.getCode();
-                 String cityName = city.getName();
-                 for (int k = 0; k < stringCode.size(); k++) {
-                     String areaName = stringName.get(k);
-                     String areaCode = stringCode.get(k);
-                     if (cityName.contains("北京") || cityName.contains("上海") || cityName.contains("天津") || cityName.contains("重庆")) {
-                         if (!province.getCode().equals(areaCode) && areaCode.startsWith(province.getCode().substring(0, 2))) {
-                             Area area = new Area();
-                             area.setName(areaName);
-                             area.setCode(areaCode);
-                             city.getAreaList().add(area);
-                         }
-                     } else {
-                         if (!areaCode.equals(cityCode) && areaCode.startsWith(cityCode.substring(0, 4))) {
-                             Area area = new Area();
-                             area.setName(areaName);
-                             area.setCode(areaCode);
-                             city.getAreaList().add(area);
-                         }
-                     }
- 
-                 }
- 
-             }
-         }
- 
- 
-         //已经处理的数据移除
-         List<String> stringNameList = new ArrayList<>(stringName);
-         List<String> stringCodeList = new ArrayList<>(stringCode);
-         for (Province province : provinceList) {
-             stringNameList.remove(province.getName());
-             stringCodeList.remove(province.getCode());
-             List<City> cities = province.getCityList();
-             for (City city : cities) {
-                 stringNameList.remove(city.getName());
-                 stringCodeList.remove(city.getCode());
-                 List<Area> listArea=city.getAreaList();
-                 for (Area area:listArea){
-                     stringNameList.remove(area.getName());
-                     stringCodeList.remove(area.getCode());
-                 }
-             }
-         }
- 
-         //处理石河子 特殊 市，City Code 不以00结尾
-         for (Province province : provinceList) {
-             for (int k = 0; k < stringCodeList.size(); k++) {
-                 if (stringCodeList.get(k).startsWith(province.getCode().substring(0, 2))) {
-                     City city = new City();
-                     List<Area> areas = new ArrayList<Area>();
-                     city.setName(stringCodeList.get(k));
-                     city.setCode(stringNameList.get(k));
-                     city.setAreaList(areas);
-                     province.getCityList().add(city);
-                 }
-             }
-         }
- 
-         return provinceList;
-     }
-```
+直接运行：
 
-最后在工程目录生成JSON文件：
+- `src/main/java/com/jx/MainGetData.java`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190312190343932.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2ppYW5neHVxYXo=,size_16,color_FFFFFF,t_70)
+执行完成后，会在项目根目录生成或覆盖：
+
+- `2024年最新中华人民共和国县以上行政区划代码.json`
+
+### 方式二：使用 Maven
+
+项目是标准 Maven 结构，导入后可编译运行。若本机已安装 Maven，可自行通过 Maven 执行主类 `com.jx.MainGetData`。
+
+## 注意事项
+
+- 页面地址和 HTML class 名称目前是写死在代码里的；如果民政部页面结构调整，需要同步修改 `MainGetData.java`
+- 当前输出文件名也是写死的，和抓取页面并不是自动联动的
+- 特殊行政区划的归类依赖现有编码规则；如果上游页面格式变化，建议先检查生成结果
